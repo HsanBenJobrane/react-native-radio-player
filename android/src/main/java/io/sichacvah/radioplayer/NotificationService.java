@@ -7,6 +7,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 
+import android.os.Bundle;
 import android.os.IBinder;
 import android.app.Service;
 import android.content.Intent;
@@ -101,9 +102,10 @@ public class NotificationService extends HeadlessJsTaskService {
         startForeground(FOREGROUND_SERVICE, status);
     }
 
-
     @Override
     protected @Nullable HeadlessJsTaskConfig getTaskConfig(Intent intent) {
+        if (intent == null) return null;
+
         String radioPath = intent.getStringExtra("RADIO_PATH");
         WritableMap params = Arguments.createMap();
         params.putString("radioPath", radioPath);

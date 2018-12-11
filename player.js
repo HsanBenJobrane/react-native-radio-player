@@ -8,7 +8,7 @@ let PlayerModule = NativeModules.PlayerModule;
 
 class Player {
     constructor() {
-        this.isPause = false;
+        this.isPause = true;
         this.start = this.start.bind(this)
         this.stop = this.stop.bind(this)
         this.setVolume = this.setVolume.bind(this)
@@ -17,9 +17,6 @@ class Player {
     }
 
     start(url) {
-        if (!url) {
-            url = "http://lin3.ash.fast-serv.com:6026/stream_96"
-        }
         PlayerModule.start(url)
         this.isPause = false;
     }
@@ -30,7 +27,7 @@ class Player {
     }
 
 
-    startPlayerService(url = "http://lin3.ash.fast-serv.com:6026/stream_96") {
+    startPlayerService(url) {
         PlayerModule.startPlayerService(url);
     }
 

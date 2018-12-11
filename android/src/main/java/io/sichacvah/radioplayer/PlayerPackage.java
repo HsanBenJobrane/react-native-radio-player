@@ -29,8 +29,7 @@ public class PlayerPackage implements ReactPackage {
         modules.add(new PlayerModule(reactContext));
         return modules;
     }
-
-    @Override
+    
     public List<Class<? extends JavaScriptModule>> createJSModules() {
         return Collections.emptyList();
     }

@@ -1,15 +1,16 @@
 package io.sichacvah.radioplayer;
 
 import android.content.Context;
-import android.net.Uri; 
+import android.media.MediaActionSound;
+import android.net.Uri;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 
-import com.google.android.exoplayer.ExoPlaybackException;
-import com.google.android.exoplayer.ExoPlayer;
-import com.google.android.exoplayer.FrameworkSampleSource;
-import com.google.android.exoplayer.MediaCodecAudioTrackRenderer;
-import com.google.android.exoplayer.TrackRenderer;
+import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.DefaultRenderersFactory;
 import android.content.Intent;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.Arguments;
@@ -20,10 +21,23 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.audio.MediaCodecAudioRenderer;
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.TrackGroupArray;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.BandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 
 public class PlayerModule extends ReactContextBaseJavaModule {
     static ExoPlayer exoPlayer;
-    static TrackRenderer audioRenderer;
+
     private final static String TAG = "PLAYER_MODULE";
     public Context mContext = null;
 
@@ -62,28 +76,68 @@ public class PlayerModule extends ReactContextBaseJavaModule {
             exoPlayer.stop();
         }
 
+        if (URL == null)
+            URL = "http://stream8.tanitweb.com/zitounafm";
         Uri URI = Uri.parse(URL);
-        FrameworkSampleSource sampleSource = new FrameworkSampleSource(mContext, URI, null);
-        audioRenderer = new MediaCodecAudioTrackRenderer(sampleSource, null, true);
-        exoPlayer = ExoPlayer.Factory.newInstance(1);
-        exoPlayer.prepare(audioRenderer);
+        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(mContext);
+        BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter(); //Provides estimates of the currently available bandwidth.
+        AdaptiveTrackSelection.Factory trackSelectionFactory = new AdaptiveTrackSelection.Factory(bandwidthMeter);
+        DefaultTrackSelector trackSelector = new DefaultTrackSelector(trackSelectionFactory);
+        DefaultLoadControl loadControl = new DefaultLoadControl();
+
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, loadControl);
+
+        DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(mContext, "NurZitounaAndroid");
+        DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+        Handler mainHandler = new Handler();
+        ExtractorMediaSource mediaSource = new ExtractorMediaSource(URI,
+                dataSourceFactory,
+                extractorsFactory,
+                mainHandler,
+                null);
+
+        exoPlayer.prepare(mediaSource);
         exoPlayer.setPlayWhenReady(true);
-        exoPlayer.addListener(new ExoPlayer.Listener() {
+
+        exoPlayer.addListener(new ExoPlayer.EventListener() {
+            @Override
+            public void onTimelineChanged(Timeline timeline, Object manifest) {
+
+            }
+
+            @Override
+            public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
+
+            }
+
+            @Override
+            public void onLoadingChanged(boolean isLoading) {
+
+            }
+
             @Override
             public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-                if (playbackState == 4) {
+                if (playbackState == 3) {
                     WritableMap params = Arguments.createMap();
                     sendEvent("start", params);
                 }
             }
 
             @Override
-            public void onPlayWhenReadyCommitted() {}
+            public void onPlayerError(ExoPlaybackException error) {
+
+            }
 
             @Override
-            public void onPlayerError(ExoPlaybackException error) {}
-        });
+            public void onPositionDiscontinuity() {
 
+            }
+
+            @Override
+            public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
+
+            }
+        });
     }
 
     @ReactMethod
@@ -106,7 +160,6 @@ public class PlayerModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void setVolume(float volume) {
         if (exoPlayer != null) {
-            exoPlayer.sendMessage(audioRenderer, MediaCodecAudioTrackRenderer.MSG_SET_VOLUME, volume);
             WritableMap params = Arguments.createMap();
             double dVolume = (double) volume;
             params.putDouble("volume", dVolume);
